@@ -20,14 +20,32 @@ export default function ExpenseForm({ onClose, initial }: Props) {
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<ExpenseFormData>({
     resolver: zodResolver(expenseSchema),
-    defaultValues: initial || { currency: 'USD', category: 'Food', date: new Date().toISOString().slice(0, 10) },
+    defaultValues: initial
+      ? { amount: initial.amount, currency: initial.currency, category: initial.category, note: initial.note, date: initial.date }
+      : { currency: 'USD', category: 'Food', date: new Date().toISOString().slice(0, 10) },
   })
 
   const submit = (data: ExpenseFormData) => {
     if (initial) {
-      updateExpense({ ...initial, ...data })
+      updateExpense({
+        id: initial.id,
+        createdAt: initial.createdAt,
+        amount: data.amount,
+        currency: data.currency,
+        category: data.category,
+        note: data.note,
+        date: data.date,
+      })
     } else {
-      addExpense({ id: uuid(), ...data, createdAt: new Date().toISOString() })
+      addExpense({
+        id: uuid(),
+        amount: data.amount,
+        currency: data.currency,
+        category: data.category,
+        note: data.note,
+        date: data.date,
+        createdAt: new Date().toISOString(),
+      })
     }
     reset()
     onClose?.()
@@ -46,21 +64,17 @@ export default function ExpenseForm({ onClose, initial }: Props) {
           </select>
         </FormField>
       </div>
-
       <FormField label="Category">
         <select style={selectStyle} {...register('category')}>
           {expenseCategories.map((c) => <option key={c}>{c}</option>)}
         </select>
       </FormField>
-
       <FormField label="Date">
         <input style={inputStyle} type="date" {...register('date')} />
       </FormField>
-
       <FormField label="Note (optional)">
         <textarea style={textareaStyle} placeholder="Any additional details…" {...register('note')} />
       </FormField>
-
       <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 4 }}>
         {onClose && <Btn type="button" variant="ghost" onClick={onClose}>Cancel</Btn>}
         <Btn type="submit">{initial ? 'Update' : 'Add Expense'}</Btn>

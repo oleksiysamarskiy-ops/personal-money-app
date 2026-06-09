@@ -20,14 +20,30 @@ export default function SavingsForm({ onClose, initial }: Props) {
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<SavingsFormData>({
     resolver: zodResolver(savingsSchema),
-    defaultValues: initial || { currency: 'USD', date: new Date().toISOString().slice(0, 10) },
+    defaultValues: initial
+      ? { amount: initial.amount, currency: initial.currency, note: initial.note, date: initial.date }
+      : { currency: 'USD', date: new Date().toISOString().slice(0, 10) },
   })
 
   const submit = (data: SavingsFormData) => {
     if (initial) {
-      updateEntry({ ...initial, ...data })
+      updateEntry({
+        id: initial.id,
+        createdAt: initial.createdAt,
+        amount: data.amount,
+        currency: data.currency,
+        note: data.note,
+        date: data.date,
+      })
     } else {
-      addEntry({ id: uuid(), ...data, createdAt: new Date().toISOString() })
+      addEntry({
+        id: uuid(),
+        amount: data.amount,
+        currency: data.currency,
+        note: data.note,
+        date: data.date,
+        createdAt: new Date().toISOString(),
+      })
     }
     reset()
     onClose?.()
@@ -46,15 +62,12 @@ export default function SavingsForm({ onClose, initial }: Props) {
           </select>
         </FormField>
       </div>
-
       <FormField label="Date">
         <input style={inputStyle} type="date" {...register('date')} />
       </FormField>
-
       <FormField label="Note (optional)">
         <textarea style={textareaStyle} placeholder="e.g. Emergency fund, Vacation…" {...register('note')} />
       </FormField>
-
       <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 4 }}>
         {onClose && <Btn type="button" variant="ghost" onClick={onClose}>Cancel</Btn>}
         <Btn type="submit">{initial ? 'Update' : 'Add Savings'}</Btn>
