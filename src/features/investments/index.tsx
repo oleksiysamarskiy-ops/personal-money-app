@@ -49,8 +49,8 @@ function CryptoForm({ initial, onClose }: { initial?: CryptoInvestment; onClose:
     defaultValues: initial || { currency:'USD', purchaseDate:new Date().toISOString().slice(0,10) },
   })
   const submit = (data: z.infer<typeof cryptoSchema>) => {
-    if (initial) update({ ...initial, ...data })
-    else add({ id:uuid(), type:'crypto', createdAt:new Date().toISOString(), ...data })
+    if (initial) update({ ...initial, type:'crypto' as const, coinName:data.coinName, symbol:data.symbol, quantity:data.quantity, purchasePrice:data.purchasePrice, currency:data.currency, purchaseDate:data.purchaseDate })
+    else add({ id:uuid(), type:'crypto' as const, createdAt:new Date().toISOString(), coinName:data.coinName, symbol:data.symbol, quantity:data.quantity, purchasePrice:data.purchasePrice, currency:data.currency, purchaseDate:data.purchaseDate })
     onClose()
   }
   return (
@@ -79,8 +79,8 @@ function StakingForm({ initial, onClose }: { initial?: StakingInvestment; onClos
     defaultValues: initial || { currency:'USD', startDate:new Date().toISOString().slice(0,10) },
   })
   const submit = (data: z.infer<typeof stakingSchema>) => {
-    if (initial) update({ ...initial, ...data })
-    else add({ id:uuid(), type:'staking', createdAt:new Date().toISOString(), ...data })
+    if (initial) update({ ...initial, type:'staking' as const, name:data.name, principal:data.principal, currency:data.currency, apr:data.apr, startDate:data.startDate, endDate:data.endDate })
+    else add({ id:uuid(), type:'staking' as const, createdAt:new Date().toISOString(), name:data.name, principal:data.principal, currency:data.currency, apr:data.apr, startDate:data.startDate, endDate:data.endDate })
     onClose()
   }
   return (
@@ -107,8 +107,8 @@ function FixedForm({ initial, onClose }: { initial?: FixedInvestment; onClose:()
     defaultValues: initial || { currency:'USD', startDate:new Date().toISOString().slice(0,10) },
   })
   const submit = (data: z.infer<typeof fixedSchema>) => {
-    if (initial) update({ ...initial, ...data })
-    else add({ id:uuid(), type:'fixed', createdAt:new Date().toISOString(), ...data })
+    if (initial) update({ ...initial, type:'fixed' as const, name:data.name, principal:data.principal, currency:data.currency, interestRate:data.interestRate, startDate:data.startDate, endDate:data.endDate })
+    else add({ id:uuid(), type:'fixed' as const, createdAt:new Date().toISOString(), name:data.name, principal:data.principal, currency:data.currency, interestRate:data.interestRate, startDate:data.startDate, endDate:data.endDate })
     onClose()
   }
   return (

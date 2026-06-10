@@ -38,7 +38,7 @@ function ExpenseForm({ initial, onClose }: { initial?: Expense; onClose: () => v
   })
   const submit = (data: FormData) => {
     if (initial) update({ ...initial, ...data })
-    else add({ id:uuid(), createdAt:new Date().toISOString(), ...data })
+    else add({ id:uuid(), createdAt:new Date().toISOString(), amount:data.amount, currency:data.currency, category:data.category, note:data.note, date:data.date })
     onClose()
   }
   return (

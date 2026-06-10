@@ -40,7 +40,7 @@ function DebtFormComp({ initial, defaultDir, onClose }: { initial?: Debt; defaul
   })
   const submit = (data: DebtForm) => {
     if (initial) update({ ...initial, ...data })
-    else add({ id:uuid(), createdAt:new Date().toISOString(), payments:[], ...data })
+    else add({ id:uuid(), createdAt:new Date().toISOString(), payments:[], direction:data.direction, name:data.name, amount:data.amount, currency:data.currency, note:data.note, dueDate:data.dueDate })
     onClose()
   }
   return (
@@ -76,7 +76,7 @@ function PaymentFormComp({ debt, onClose }: { debt: Debt; onClose:()=>void }) {
     defaultValues: { date:new Date().toISOString().slice(0,10) },
   })
   const submit = (data: PaymentForm) => {
-    addPayment(debt.id, { id:uuid(), ...data })
+    addPayment(debt.id, { id:uuid(), amount:data.amount, date:data.date, note:data.note })
     onClose()
   }
   return (

@@ -45,7 +45,7 @@ function SubForm({ initial, onClose }: { initial?: Subscription; onClose:()=>voi
   })
   const submit = (data: FormData) => {
     if (initial) update({ ...initial, ...data })
-    else add({ id:uuid(), createdAt:new Date().toISOString(), ...data })
+    else add({ id:uuid(), createdAt:new Date().toISOString(), name:data.name, price:data.price, currency:data.currency, nextBillingDate:data.nextBillingDate, billingCycle:data.billingCycle, note:data.note })
     onClose()
   }
   return (

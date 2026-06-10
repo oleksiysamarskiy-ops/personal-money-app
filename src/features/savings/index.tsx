@@ -33,7 +33,7 @@ function SavingsForm({ initial, onClose }: { initial?: SavingsEntry; onClose: ()
   })
   const submit = (data: FormData) => {
     if (initial) update({ ...initial, ...data })
-    else add({ id:uuid(), createdAt:new Date().toISOString(), ...data })
+    else add({ id:uuid(), createdAt:new Date().toISOString(), amount:data.amount, currency:data.currency, note:data.note, date:data.date })
     onClose()
   }
   return (
