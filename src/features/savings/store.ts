@@ -1,37 +1,11 @@
 import { create } from 'zustand'
-import { SavingsEntry } from '@/types/savings'
+import { SavingsEntry } from '@/types'
 import { loadState, saveState } from '@/store/persist'
-
-const STORAGE_KEY = 'finance-savings'
-
-interface SavingsStore {
-  entries: SavingsEntry[]
-  addEntry: (entry: SavingsEntry) => void
-  removeEntry: (id: string) => void
-  updateEntry: (entry: SavingsEntry) => void
-}
-
-export const useSavingsStore = create<SavingsStore>((set) => ({
-  entries: loadState(STORAGE_KEY, []),
-
-  addEntry: (entry) =>
-    set((state) => {
-      const entries = [...state.entries, entry]
-      saveState(STORAGE_KEY, entries)
-      return { entries }
-    }),
-
-  removeEntry: (id) =>
-    set((state) => {
-      const entries = state.entries.filter((e) => e.id !== id)
-      saveState(STORAGE_KEY, entries)
-      return { entries }
-    }),
-
-  updateEntry: (entry) =>
-    set((state) => {
-      const entries = state.entries.map((e) => (e.id === entry.id ? entry : e))
-      saveState(STORAGE_KEY, entries)
-      return { entries }
-    }),
+const KEY = 'ft-savings'
+interface S { entries: SavingsEntry[]; add:(e:SavingsEntry)=>void; remove:(id:string)=>void; update:(e:SavingsEntry)=>void }
+export const useSavingsStore = create<S>((set) => ({
+  entries: loadState(KEY, []),
+  add: (e) => set(s => { const entries=[...s.entries,e]; saveState(KEY,entries); return {entries} }),
+  remove: (id) => set(s => { const entries=s.entries.filter(e=>e.id!==id); saveState(KEY,entries); return {entries} }),
+  update: (e) => set(s => { const entries=s.entries.map(x=>x.id===e.id?e:x); saveState(KEY,entries); return {entries} }),
 }))

@@ -1,193 +1,221 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useIncomeStore } from '@/features/income/store'
 import { useExpenseStore } from '@/features/expenses/store'
 import { useSavingsStore } from '@/features/savings/store'
-import { getMonthlyIncome, getTotalIncome, getIncomeByMonth } from '@/features/income/selectors'
-import { getMonthlyExpenses, getTotalExpenses, groupExpensesByCategory } from '@/features/expenses/selectors'
-import { getMonthlySavings, getTotalSavings } from '@/features/savings/schema'
-import { getCategoryMeta } from '@/features/expenses/schema'
-import { Page, SectionHead } from '@/components/ui'
-import { format } from 'date-fns'
+import { useInvestmentStore } from '@/features/investments/store'
+import { useDebtStore } from '@/features/debts/store'
+import { useSubscriptionStore } from '@/features/subscriptions/store'
+import { useSettingsStore } from '@/store/settings'
+import { Currency, CryptoInvestment } from '@/types'
 import {
-  ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip,
-  ComposedChart, Bar, Line, CartesianGrid
-} from 'recharts'
-import { useNavigate } from 'react-router-dom'
+  totalIncome, monthlyIncome, totalExpenses, monthlyExpenses,
+  totalSavings, monthlySavings, totalInvestments,
+  totalIOwe, totalOwedToMe, calcFreeCash, calcNetWorth, financialCushion
+} from '@/utils/selectors'
+import { fmt, CURRENCY_SYMBOLS } from '@/utils/currency'
+import { daysUntil } from '@/utils/date'
+import { Page, Card, SectionHead } from '@/components/ui'
+import { format } from 'date-fns'
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts'
+import { buildMonthlyChart } from '@/utils/selectors'
 
-function BigStat({ label, value, sub, color }: { label: string; value: string; sub?: string; color: string }) {
+async function fetchPrices(symbols: string[]): Promise<Record<string,number>> {
+  if (!symbols.length) return {}
+  try {
+    const ids = symbols.map(s=>s.toLowerCase()).join(',')
+    const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=usd`)
+    if (!res.ok) return {}
+    const data = await res.json()
+    const result: Record<string,number> = {}
+    symbols.forEach(s=>{ if (data[s.toLowerCase()]) result[s.toUpperCase()]=data[s.toLowerCase()].usd })
+    return result
+  } catch { return {} }
+}
+
+const CURRENCIES: Currency[] = ['USD','EUR','PLN','UAH','GBP']
+
+function MetricRow({ label, value, color, onClick }: { label:string; value:string; color?:string; onClick?:()=>void }) {
   return (
-    <div style={{ flex: '1 1 0', minWidth: 0 }}>
-      <div style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>{label}</div>
-      <div style={{ fontSize: 22, fontWeight: 700, fontFamily: 'var(--mono)', color, letterSpacing: '-0.03em', lineHeight: 1 }}>{value}</div>
-      {sub && <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>{sub}</div>}
+    <div onClick={onClick} style={{ display:'flex',justifyContent:'space-between',alignItems:'center',padding:'11px 0',borderBottom:'1px solid var(--border)',cursor:onClick?'pointer':'default' }}>
+      <span style={{ fontSize:13,color:'var(--text-2)' }}>{label}</span>
+      <span style={{ fontSize:15,fontWeight:700,fontFamily:'var(--mono)',color:color||'var(--text-num)',letterSpacing:'-0.02em' }}>{value}</span>
     </div>
   )
 }
 
 export default function DashboardPage() {
-  const incomes = useIncomeStore(s => s.incomes)
-  const expenses = useExpenseStore(s => s.expenses)
-  const savings = useSavingsStore(s => s.entries)
+  const { incomes } = useIncomeStore()
+  const { expenses } = useExpenseStore()
+  const { entries: savings } = useSavingsStore()
+  const { investments } = useInvestmentStore()
+  const { debts } = useDebtStore()
+  const { subscriptions } = useSubscriptionStore()
+  const { settings, setBaseCurrency } = useSettingsStore()
+  const base = settings.baseCurrency
   const navigate = useNavigate()
+  const [prices, setPrices] = useState<Record<string,number>>({})
+  const [showCurrPicker, setShowCurrPicker] = useState(false)
 
-  const mIncome = getMonthlyIncome(incomes)
-  const mExpenses = getMonthlyExpenses(expenses)
-  const mSavings = getMonthlySavings(savings)
-  const mFree = mIncome - mExpenses - mSavings
+  useEffect(() => {
+    const cryptos = investments.filter(i=>i.type==='crypto') as CryptoInvestment[]
+    if (cryptos.length) fetchPrices(cryptos.map(c=>c.symbol)).then(setPrices)
+  }, [investments])
 
-  const tIncome = getTotalIncome(incomes)
-  const tExpenses = getTotalExpenses(expenses)
-  const tSavings = getTotalSavings(savings)
-  const tFree = tIncome - tExpenses - tSavings
+  const mIncome    = monthlyIncome(incomes, base)
+  const mExpenses  = monthlyExpenses(expenses, base)
+  const mSavings   = monthlySavings(savings, base)
+  const freeCash   = calcFreeCash(incomes, expenses, savings, debts, base)
+  const totalSav   = totalSavings(savings, base)
+  const totalInv   = totalInvestments(investments, prices, base)
+  const iOwe       = totalIOwe(debts, base)
+  const owedToMe   = totalOwedToMe(debts, base)
+  const netWorth   = calcNetWorth(savings, investments, prices, freeCash, debts, base)
+  const cushion    = financialCushion(savings, expenses, base)
+  const monthChart = buildMonthlyChart(incomes, expenses, base)
 
-  const byCat = groupExpensesByCategory(expenses).sort((a, b) => b.value - a.value).slice(0, 5)
-
-  const allMonths = [...new Set([
-    ...incomes.map(i => i.date.slice(0, 7)),
-    ...expenses.map(e => e.date.slice(0, 7)),
-  ])].sort()
-
-  const chartData = allMonths.map(m => ({
-    month: format(new Date(m + '-01'), 'MMM'),
-    income: incomes.filter(i => i.date.startsWith(m)).reduce((s, i) => s + i.amount, 0),
-    expenses: expenses.filter(e => e.date.startsWith(m)).reduce((s, e) => s + e.amount, 0),
-  }))
-
-  const hasData = incomes.length > 0 || expenses.length > 0
+  const upcoming = subscriptions
+    .map(s=>({ ...s, days:daysUntil(s.nextBillingDate) }))
+    .filter(s=>s.days>=0 && s.days<=14)
+    .sort((a,b)=>a.days-b.days)
+    .slice(0,3)
 
   return (
     <Page>
-      {/* Hero */}
-      <div style={{ padding: '56px 20px 24px' }}>
-        <div style={{ fontSize: 13, color: 'var(--text-3)', fontWeight: 500, marginBottom: 4 }}>
-          {format(new Date(), 'MMMM yyyy')}
+      {/* Header */}
+      <div style={{ padding:'52px 20px 8px',display:'flex',alignItems:'flex-end',justifyContent:'space-between' }}>
+        <div>
+          <div style={{ fontSize:12,color:'var(--text-3)',fontWeight:500,marginBottom:4 }}>
+            {format(new Date(),'MMMM yyyy')}
+          </div>
+          <h1 style={{ fontSize:28,fontWeight:800,letterSpacing:'-0.03em' }}>Обзор</h1>
         </div>
-        <h1 style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 20 }}>Обзор</h1>
+        <button
+          onClick={()=>setShowCurrPicker(v=>!v)}
+          style={{ background:'var(--bg-card)',border:'1px solid var(--border)',borderRadius:10,padding:'8px 14px',color:'var(--text-2)',fontSize:13,fontWeight:600,cursor:'pointer',fontFamily:'var(--font)' }}
+        >
+          {CURRENCY_SYMBOLS[base]} {base}
+        </button>
+      </div>
 
-        {/* Free cash hero card */}
-        <div style={{
-          background: 'var(--bg-card)',
-          border: `1px solid ${mFree >= 0 ? 'rgba(61,214,140,0.15)' : 'rgba(242,85,90,0.15)'}`,
-          borderRadius: 'var(--radius-lg)',
-          padding: '20px',
-          marginBottom: 12,
-          position: 'relative', overflow: 'hidden',
-        }}>
-          <div style={{
-            position: 'absolute', top: 0, left: 0, right: 0, height: 2,
-            background: mFree >= 0 ? 'var(--green)' : 'var(--red)',
-            opacity: 0.7,
-          }} />
-          <div style={{ fontSize: 12, color: 'var(--text-3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
-            Свободные средства · месяц
-          </div>
-          <div style={{
-            fontSize: 40, fontWeight: 800, fontFamily: 'var(--mono)',
-            letterSpacing: '-0.04em', lineHeight: 1,
-            color: mFree >= 0 ? 'var(--green)' : 'var(--red)',
-            marginBottom: 16,
-          }}>
-            {mFree >= 0 ? '+' : ''}{mFree.toLocaleString('ru-RU')}
-          </div>
-          <div style={{ display: 'flex', gap: 20 }}>
-            <BigStat label="Доходы" value={mIncome.toLocaleString('ru-RU')} color="var(--green)" />
-            <BigStat label="Расходы" value={mExpenses.toLocaleString('ru-RU')} color="var(--red)" />
-            <BigStat label="Сбережения" value={mSavings.toLocaleString('ru-RU')} color="var(--yellow)" />
-          </div>
+      {/* Currency picker */}
+      {showCurrPicker && (
+        <div style={{ padding:'0 20px 12px' }}>
+          <Card>
+            <div style={{ display:'flex' }}>
+              {CURRENCIES.map((c,i)=>(
+                <button key={c} onClick={()=>{setBaseCurrency(c);setShowCurrPicker(false)}} style={{ flex:1,padding:'12px 4px',border:'none',borderRight:i<CURRENCIES.length-1?'1px solid var(--border)':'none',background:base===c?'var(--accent-dim)':'transparent',color:base===c?'var(--accent-2)':'var(--text-2)',fontSize:12,fontWeight:600,cursor:'pointer',fontFamily:'var(--font)' }}>
+                  {c}
+                </button>
+              ))}
+            </div>
+          </Card>
         </div>
+      )}
 
-        {/* All-time row */}
-        <div style={{
-          background: 'var(--bg-card)', border: '1px solid var(--border)',
-          borderRadius: 'var(--radius)', padding: '16px 18px',
-        }}>
-          <div style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>За всё время</div>
-          <div style={{ display: 'flex', gap: 16 }}>
-            <BigStat label="Накоплено" value={tSavings.toLocaleString('ru-RU')} sub="руб." color="var(--yellow)" />
-            <BigStat label="Остаток" value={tFree.toLocaleString('ru-RU')} sub="руб." color={tFree >= 0 ? 'var(--green)' : 'var(--red)'} />
+      {/* Net Worth Hero */}
+      <div style={{ padding:'8px 20px 12px' }}>
+        <Card style={{ padding:'20px',position:'relative',overflow:'hidden', border:`1px solid ${netWorth>=0?'rgba(91,91,214,0.3)':'rgba(242,85,90,0.25)'}` }}>
+          <div style={{ position:'absolute',top:0,left:0,right:0,height:2,background:netWorth>=0?'var(--accent)':'var(--red)' }} />
+          <div style={{ fontSize:11,color:'var(--text-3)',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.09em',marginBottom:6 }}>
+            Чистый капитал
           </div>
-        </div>
+          <div style={{ fontSize:40,fontWeight:800,fontFamily:'var(--mono)',letterSpacing:'-0.04em',lineHeight:1,color:netWorth>=0?'var(--accent-2)':'var(--red)',marginBottom:16 }}>
+            {netWorth>=0?'+':''}{fmt(netWorth,base)}
+          </div>
+          <div style={{ display:'flex',gap:20 }}>
+            {[
+              { l:'Сбережения', v:fmt(totalSav,base), c:'var(--yellow)' },
+              { l:'Инвестиции', v:fmt(totalInv,base), c:'var(--purple)' },
+              { l:'Долги', v:fmt(iOwe,base), c:'var(--red)' },
+            ].map(m=>(
+              <div key={m.l}>
+                <div style={{ fontSize:10,color:'var(--text-3)',fontWeight:600,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:4 }}>{m.l}</div>
+                <div style={{ fontSize:15,fontWeight:700,fontFamily:'var(--mono)',color:m.c,letterSpacing:'-0.02em' }}>{m.v}</div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      </div>
+
+      {/* Free Cash */}
+      <div style={{ padding:'0 20px 12px' }}>
+        <Card style={{ padding:'18px',border:`1px solid ${freeCash>=0?'rgba(61,214,140,0.2)':'rgba(242,85,90,0.2)'}` }}>
+          <div style={{ fontSize:11,color:'var(--text-3)',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.09em',marginBottom:6 }}>Свободные средства</div>
+          <div style={{ fontSize:32,fontWeight:800,fontFamily:'var(--mono)',letterSpacing:'-0.04em',color:freeCash>=0?'var(--green)':'var(--red)',marginBottom:10 }}>
+            {freeCash>=0?'+':''}{fmt(freeCash,base)}
+          </div>
+          <div style={{ display:'flex',gap:6 }}>
+            {[
+              { l:'Доходы', v:fmt(mIncome,base), c:'var(--green)' },
+              { l:'Расходы', v:fmt(mExpenses,base), c:'var(--red)' },
+              { l:'Сбережения', v:fmt(mSavings,base), c:'var(--yellow)' },
+            ].map(m=>(
+              <div key={m.l} style={{ flex:1,background:'var(--bg-input)',borderRadius:10,padding:'10px 10px' }}>
+                <div style={{ fontSize:9,color:'var(--text-3)',fontWeight:700,textTransform:'uppercase',letterSpacing:'0.06em',marginBottom:4 }}>{m.l}</div>
+                <div style={{ fontSize:13,fontWeight:700,fontFamily:'var(--mono)',color:m.c,letterSpacing:'-0.02em' }}>{m.v}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ fontSize:11,color:'var(--text-3)',marginTop:8 }}>доходы − расходы − сбережения − выплаты</div>
+        </Card>
+      </div>
+
+      {/* Metrics list */}
+      <div style={{ padding:'0 20px 12px' }}>
+        <Card style={{ padding:'4px 18px' }}>
+          <MetricRow label="Доходы (месяц)" value={fmt(mIncome,base)} color="var(--green)" onClick={()=>navigate('/income')} />
+          <MetricRow label="Расходы (месяц)" value={fmt(mExpenses,base)} color="var(--red)" onClick={()=>navigate('/expenses')} />
+          <MetricRow label="Инвестиции" value={fmt(totalInv,base)} color="var(--purple)" onClick={()=>navigate('/investments')} />
+          <MetricRow label="Я должен" value={fmt(iOwe,base)} color="var(--red)" onClick={()=>navigate('/debts')} />
+          <MetricRow label="Мне должны" value={fmt(owedToMe,base)} color="var(--green)" onClick={()=>navigate('/debts')} />
+          <div style={{ padding:'11px 0',display:'flex',justifyContent:'space-between',alignItems:'center' }}>
+            <span style={{ fontSize:13,color:'var(--text-2)' }}>Фин. подушка</span>
+            <span style={{ fontSize:15,fontWeight:700,fontFamily:'var(--mono)',color:cushion>=6?'var(--green)':cushion>=3?'var(--yellow)':'var(--red)',letterSpacing:'-0.02em' }}>
+              {cushion>0?`${cushion.toFixed(1)} мес.`:'—'}
+            </span>
+          </div>
+        </Card>
       </div>
 
       {/* Chart */}
-      {chartData.length > 0 && (
-        <div style={{ padding: '0 20px 16px' }}>
-          <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '16px 8px 8px 4px' }}>
-            <div style={{ paddingLeft: 12, marginBottom: 12 }}>
-              <SectionHead title="Доходы vs Расходы" />
-            </div>
-            <ResponsiveContainer width="100%" height={160}>
-              <ComposedChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+      {monthChart.length>0 && (
+        <div style={{ padding:'0 20px 12px' }}>
+          <Card style={{ padding:'16px 12px 8px' }}>
+            <div style={{ paddingLeft:4,marginBottom:10 }}><SectionHead title="Доходы vs расходы" /></div>
+            <ResponsiveContainer width="100%" height={150}>
+              <BarChart data={monthChart} margin={{ top:4,right:4,left:0,bottom:0 }}>
                 <CartesianGrid stroke="rgba(255,255,255,0.03)" vertical={false} />
-                <XAxis dataKey="month" tick={{ fill: '#606078', fontSize: 10 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: '#606078', fontSize: 10 }} axisLine={false} tickLine={false} width={40} />
-                <Tooltip
-                  contentStyle={{ background: '#13131A', border: '1px solid #ffffff11', borderRadius: 10, fontSize: 12 }}
-                  formatter={(v: number) => [`${v.toLocaleString('ru-RU')} руб.`, '']}
-                />
-                <Bar dataKey="income" fill="var(--green)" opacity={0.7} radius={[3, 3, 0, 0]} name="Доходы" />
-                <Bar dataKey="expenses" fill="var(--red)" opacity={0.7} radius={[3, 3, 0, 0]} name="Расходы" />
-              </ComposedChart>
+                <XAxis dataKey="month" tick={{ fill:'#606078',fontSize:10 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill:'#606078',fontSize:10 }} axisLine={false} tickLine={false} width={38} />
+                <Tooltip contentStyle={{ background:'#13131A',border:'1px solid #ffffff0f',borderRadius:10,fontSize:11 }} formatter={(v:number)=>[fmt(v,base),'']} />
+                <Bar dataKey="income" fill="var(--green)" opacity={0.8} radius={[3,3,0,0]} name="Доходы" />
+                <Bar dataKey="expenses" fill="var(--red)" opacity={0.8} radius={[3,3,0,0]} name="Расходы" />
+              </BarChart>
             </ResponsiveContainer>
-          </div>
+          </Card>
         </div>
       )}
 
-      {/* Top categories */}
-      {byCat.length > 0 && (
-        <div style={{ padding: '0 20px 16px' }}>
-          <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
-            <div style={{ padding: '16px 16px 10px' }}>
-              <SectionHead title="Топ расходов" />
-            </div>
-            {byCat.map((cat, idx) => {
-              const meta = getCategoryMeta(cat.name)
-              const pct = tExpenses > 0 ? (cat.value / tExpenses) * 100 : 0
-              return (
-                <div key={cat.name} style={{
-                  padding: '10px 16px',
-                  borderTop: idx === 0 ? '1px solid var(--border)' : 'none',
-                  borderBottom: idx < byCat.length - 1 ? '1px solid var(--border)' : 'none',
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
-                    <span style={{ fontSize: 18 }}>{meta.emoji}</span>
-                    <span style={{ flex: 1, fontSize: 14, fontWeight: 500 }}>{cat.name}</span>
-                    <span style={{ fontFamily: 'var(--mono)', fontSize: 14, fontWeight: 700, color: 'var(--red)' }}>
-                      {cat.value.toLocaleString('ru-RU')}
-                    </span>
-                  </div>
-                  <div style={{ height: 3, background: 'var(--bg-input)', borderRadius: 2, overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: `${pct}%`, background: meta.color, borderRadius: 2, opacity: 0.8 }} />
-                  </div>
+      {/* Upcoming subscriptions */}
+      {upcoming.length>0 && (
+        <div style={{ padding:'0 20px 12px' }}>
+          <SectionHead title="Ближайшие подписки" />
+          <Card>
+            {upcoming.map((s,idx)=>(
+              <div key={s.id} style={{ padding:'12px 16px',borderBottom:idx<upcoming.length-1?'1px solid var(--border)':'none',display:'flex',justifyContent:'space-between',alignItems:'center' }}>
+                <div>
+                  <div style={{ fontSize:14,fontWeight:600 }}>{s.name}</div>
+                  <div style={{ fontSize:12,color:'var(--text-3)',marginTop:2 }}>{fmt(s.price,s.currency)}</div>
                 </div>
-              )
-            })}
-          </div>
+                <div style={{ fontSize:13,fontWeight:700,color:s.days<=3?'var(--red)':s.days<=7?'var(--yellow)':'var(--text-2)' }}>
+                  {s.days===0?'Сегодня':`${s.days} дн.`}
+                </div>
+              </div>
+            ))}
+          </Card>
         </div>
       )}
-
-      {/* Quick actions */}
-      <div style={{ padding: '0 20px 8px' }}>
-        <SectionHead title="Быстрый переход" />
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-          {[
-            { label: 'Доходы', icon: '↑', color: 'var(--green)', to: '/income' },
-            { label: 'Расходы', icon: '↓', color: 'var(--red)', to: '/expenses' },
-            { label: 'Сбережения', icon: '⬡', color: 'var(--yellow)', to: '/savings' },
-          ].map(item => (
-            <button key={item.to} onClick={() => navigate(item.to)} style={{
-              background: 'var(--bg-card)', border: '1px solid var(--border)',
-              borderRadius: 'var(--radius)', padding: '16px',
-              display: 'flex', alignItems: 'center', gap: 10,
-              cursor: 'pointer', fontFamily: 'var(--font)',
-              WebkitTapHighlightColor: 'transparent',
-            }}>
-              <span style={{ fontSize: 20, color: item.color }}>{item.icon}</span>
-              <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{item.label}</span>
-            </button>
-          ))}
-        </div>
-      </div>
     </Page>
   )
 }
