@@ -59,7 +59,7 @@ export default function MorePage() {
           <div style={{ display:'flex',alignItems:'center',gap:12 }}>
             <div style={{ width:38,height:38,borderRadius:'50%',background:'var(--accent-dim)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:18 }}>👤</div>
             <div>
-              <div style={{ fontSize:14,fontWeight:600,color:'var(--text)' }}>{user?.email || "Пользователь"}</div>
+              <div style={{ fontSize:14,fontWeight:600,color:'var(--text)' }}>{user?.username || 'Пользователь'}</div>
               <div style={{ fontSize:12,color:'var(--text-3)',marginTop:1 }}>Аккаунт</div>
             </div>
           </div>

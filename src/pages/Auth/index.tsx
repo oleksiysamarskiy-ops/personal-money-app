@@ -3,14 +3,14 @@ import { useAuthStore } from '@/store/auth'
 
 export default function AuthPage() {
   const [mode, setMode] = useState<'login' | 'register'>('login')
-  const [email, setEmail] = useState('')
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const { login, register, error, loading, clearError } = useAuthStore()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (mode === 'login') await login(email, password)
-    else await register(email, password)
+    if (mode === 'login') await login(username, password)
+    else await register(username, password)
   }
 
   const inp: React.CSSProperties = {
@@ -21,7 +21,7 @@ export default function AuthPage() {
   }
   const lbl: React.CSSProperties = {
     display: 'block', fontSize: 12, color: 'var(--text-3)', marginBottom: 6,
-    fontWeight: 600, letterSpacing: '0.03em', textTransform: 'uppercase',
+    fontWeight: 600, letterSpacing: '0.03em', textTransform: 'uppercase' as const,
   }
 
   return (
@@ -33,30 +33,30 @@ export default function AuthPage() {
       </div>
 
       <div style={{ display:'flex',background:'var(--bg-card)',borderRadius:14,padding:4,marginBottom:24,width:'100%',maxWidth:340 }}>
-        {(['login','register'] as const).map(m=>(
-          <button key={m} onClick={()=>{setMode(m);clearError()}} style={{
-            flex:1,padding:'9px',border:'none',borderRadius:10,cursor:'pointer',
-            fontFamily:'var(--font)',fontSize:14,fontWeight:600,
-            background:mode===m?'var(--accent)':'transparent',
-            color:mode===m?'#fff':'var(--text-3)',transition:'all 0.2s',
+        {(['login','register'] as const).map(m => (
+          <button key={m} onClick={() => { setMode(m); clearError() }} style={{
+            flex:1, padding:'9px', border:'none', borderRadius:10, cursor:'pointer',
+            fontFamily:'var(--font)', fontSize:14, fontWeight:600,
+            background: mode===m ? 'var(--accent)' : 'transparent',
+            color: mode===m ? '#fff' : 'var(--text-3)', transition:'all 0.2s',
           }}>
-            {m==='login'?'Войти':'Регистрация'}
+            {m === 'login' ? 'Войти' : 'Регистрация'}
           </button>
         ))}
       </div>
 
       <form onSubmit={handleSubmit} style={{ display:'flex',flexDirection:'column',gap:12,width:'100%',maxWidth:340 }}>
         <div>
-          <label style={lbl}>Email</label>
-          <input style={inp} type="email" placeholder="you@example.com" value={email}
-            onChange={e=>{setEmail(e.target.value);clearError()}} autoComplete="email" />
+          <label style={lbl}>Логин</label>
+          <input style={inp} placeholder="Введите логин" value={username}
+            onChange={e => { setUsername(e.target.value); clearError() }} autoComplete="username" />
         </div>
         <div>
           <label style={lbl}>Пароль</label>
           <input style={inp} type="password"
-            placeholder={mode==='register'?'Минимум 6 символов':'Введите пароль'}
-            value={password} onChange={e=>{setPassword(e.target.value);clearError()}}
-            autoComplete={mode==='login'?'current-password':'new-password'} />
+            placeholder={mode === 'register' ? 'Минимум 4 символа' : 'Введите пароль'}
+            value={password} onChange={e => { setPassword(e.target.value); clearError() }}
+            autoComplete={mode === 'login' ? 'current-password' : 'new-password'} />
         </div>
 
         {error && (
@@ -66,16 +66,17 @@ export default function AuthPage() {
         )}
 
         <button type="submit" disabled={loading} style={{
-          width:'100%',padding:'14px',borderRadius:14,background:'var(--accent)',
-          border:'none',color:'#fff',fontSize:15,fontWeight:700,cursor:loading?'default':'pointer',
-          fontFamily:'var(--font)',marginTop:4,opacity:loading?0.7:1,
+          width:'100%', padding:'14px', borderRadius:14, background:'var(--accent)',
+          border:'none', color:'#fff', fontSize:15, fontWeight:700,
+          cursor: loading ? 'default' : 'pointer',
+          fontFamily:'var(--font)', marginTop:4, opacity: loading ? 0.7 : 1,
         }}>
-          {loading ? '…' : (mode==='login'?'Войти':'Создать аккаунт')}
+          {loading ? '…' : (mode === 'login' ? 'Войти' : 'Создать аккаунт')}
         </button>
       </form>
 
       <div style={{ marginTop:24,fontSize:12,color:'var(--text-3)',textAlign:'center',maxWidth:280,lineHeight:1.6 }}>
-        Данные хранятся в защищённой базе данных Supabase и привязаны к вашему аккаунту
+        Данные хранятся локально в браузере и никуда не передаются
       </div>
     </div>
   )

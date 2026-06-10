@@ -1,34 +1,24 @@
 import { makeStore } from './createStore'
 import { useUserId } from './userContext'
 import { AppSettings, Currency } from '@/types'
-import { dbLoad, dbUpsert } from '@/lib/supabase'
+import { dbGet, dbPut } from '@/lib/db'
 
 interface SettingsState {
-  settings: AppSettings
-  loaded: boolean
-  load: (userId: string) => Promise<void>
-  setBaseCurrency: (c: Currency, userId: string) => void
+  settings: AppSettings; loaded: boolean
+  load: (uid: string) => Promise<void>
+  setBaseCurrency: (c: Currency, uid: string) => void
 }
-
 const getStore = makeStore<SettingsState>((set) => ({
-  settings: { baseCurrency: 'USD' as Currency },
-  loaded: false,
-  load: async (userId) => {
-    const data = await dbLoad<{ id: string; base_currency: Currency }>('user_settings', userId)
-    if (data.length > 0) {
-      set(() => ({ settings: { baseCurrency: data[0].base_currency }, loaded: true }))
-    } else {
-      set(() => ({ loaded: true }))
-    }
+  settings: { baseCurrency: 'USD' as Currency }, loaded: false,
+  load: async (uid) => {
+    const data = await dbGet<{ id: string; baseCurrency: Currency; _uid: string }>('settings', `settings_${uid}`)
+    if (data) set(() => ({ settings: { baseCurrency: data.baseCurrency }, loaded: true }))
+    else set(() => ({ loaded: true }))
   },
-  setBaseCurrency: (baseCurrency, userId) => {
+  setBaseCurrency: (baseCurrency, uid) => {
     set(() => ({ settings: { baseCurrency } }))
-    dbUpsert('user_settings', userId, { id: userId, base_currency: baseCurrency })
+    dbPut('settings', uid, { id: `settings_${uid}`, baseCurrency })
   },
 }))
-
-export const useSettingsStore = () => {
-  const uid = useUserId()
-  return getStore(uid)()
-}
+export const useSettingsStore = () => getStore(useUserId())()
 export const getSettingsStore = getStore

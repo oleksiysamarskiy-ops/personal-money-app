@@ -1,62 +1,39 @@
 import { makeStore } from '@/store/createStore'
 import { useUserId } from '@/store/userContext'
 import { Debt, DebtPayment } from '@/types'
-import { dbLoad, dbInsert, dbUpdate, dbDelete } from '@/lib/supabase'
+import { dbGetAll, dbPut, dbDelete } from '@/lib/db'
 
 interface DebtState {
-  debts: Debt[]
-  loaded: boolean
-  load: (userId: string) => Promise<void>
-  add: (item: Debt, userId: string) => Promise<void>
-  remove: (id: string, userId: string) => Promise<void>
-  update: (item: Debt, userId: string) => Promise<void>
-  addPayment: (debtId: string, payment: DebtPayment, userId: string) => Promise<void>
-  removePayment: (debtId: string, paymentId: string, userId: string) => Promise<void>
+  debts: Debt[]; loaded: boolean
+  load: (uid: string) => Promise<void>
+  add: (item: Debt, uid: string) => Promise<void>
+  remove: (id: string, uid: string) => Promise<void>
+  update: (item: Debt, uid: string) => Promise<void>
+  addPayment: (debtId: string, payment: DebtPayment, uid: string) => Promise<void>
+  removePayment: (debtId: string, paymentId: string, uid: string) => Promise<void>
 }
-
 const getStore = makeStore<DebtState>((set) => ({
-  debts: [],
-  loaded: false,
-  load: async (userId) => {
-    const data = await dbLoad<Debt>('debts', userId)
-    set(() => ({ debts: data, loaded: true }))
-  },
-  add: async (item, userId) => {
-    await dbInsert('debts', userId, item)
-    set((s) => ({ debts: [item, ...s.debts] }))
-  },
-  remove: async (id, userId) => {
-    await dbDelete('debts', userId, id)
-    set((s) => ({ debts: s.debts.filter(x => x.id !== id) }))
-  },
-  update: async (item, userId) => {
-    await dbUpdate('debts', userId, item)
-    set((s) => ({ debts: s.debts.map(x => x.id === item.id ? item : x) }))
-  },
-  addPayment: async (debtId, payment, userId) => {
-    set((s) => {
-      const debts = s.debts.map(d =>
-        d.id === debtId ? { ...d, payments: [...d.payments, payment] } : d
-      )
+  debts: [], loaded: false,
+  load: async (uid) => { const data = await dbGetAll<Debt>('debts', uid); set(() => ({ debts: data, loaded: true })) },
+  add: async (item, uid) => { await dbPut('debts', uid, item); set(s => ({ debts: [item, ...s.debts] })) },
+  remove: async (id, uid) => { await dbDelete('debts', id); set(s => ({ debts: s.debts.filter(x => x.id !== id) })) },
+  update: async (item, uid) => { await dbPut('debts', uid, item); set(s => ({ debts: s.debts.map(x => x.id === item.id ? item : x) })) },
+  addPayment: async (debtId, payment, uid) => {
+    set(s => {
+      const debts = s.debts.map(d => d.id === debtId ? { ...d, payments: [...d.payments, payment] } : d)
       const updated = debts.find(d => d.id === debtId)!
-      dbUpdate('debts', userId, updated)
+      dbPut('debts', uid, updated)
       return { debts }
     })
   },
-  removePayment: async (debtId, paymentId, userId) => {
-    set((s) => {
-      const debts = s.debts.map(d =>
-        d.id === debtId ? { ...d, payments: d.payments.filter(p => p.id !== paymentId) } : d
-      )
+  removePayment: async (debtId, paymentId, uid) => {
+    set(s => {
+      const debts = s.debts.map(d => d.id === debtId ? { ...d, payments: d.payments.filter(p => p.id !== paymentId) } : d)
       const updated = debts.find(d => d.id === debtId)!
-      dbUpdate('debts', userId, updated)
+      dbPut('debts', uid, updated)
       return { debts }
     })
   },
 }))
-
-export const useDebtStore = () => {
-  const uid = useUserId()
-  return getStore(uid)()
-}
+export const useDebtStore = () => getStore(useUserId())()
 export const getDebtStore = getStore
