@@ -75,7 +75,7 @@ export default function DashboardPage() {
   const monthChart = buildMonthlyChart(incomes, expenses, base)
 
   const upcoming = subscriptions
-    .map(s=>({ ...s, days:daysUntil(s.nextBillingDate) }))
+    .map(s=>({ ...s, days: s.nextBillingDate ? daysUntil(s.nextBillingDate) : 999 }))
     .filter(s=>s.days>=0 && s.days<=14)
     .sort((a,b)=>a.days-b.days)
     .slice(0,3)

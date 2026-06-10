@@ -87,7 +87,7 @@ export default function SubscriptionsPage() {
   const [editing, setEditing] = useState<Subscription|null>(null)
 
   const sorted = [...subscriptions]
-    .map(s=>({ ...s, days:daysUntil(s.nextBillingDate) }))
+    .map(s=>({ ...s, days: s.nextBillingDate ? daysUntil(s.nextBillingDate) : 999 }))
     .sort((a,b)=>a.days-b.days)
 
   const monthlyTotal = subscriptions.reduce((sum,s) => {
