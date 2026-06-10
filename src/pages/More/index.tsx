@@ -1,13 +1,11 @@
+import { useExpenseStore, useIncomeStore, useSavingsStore, useInvestmentStore, useDebtStore, useSubscriptionStore, useSettingsStore } from '@/store/hooks'
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Page } from '@/components/ui'
-import { useInvestmentStore } from '@/features/investments/store'
-import { useDebtStore } from '@/features/debts/store'
-import { useSubscriptionStore } from '@/features/subscriptions/store'
-import { useSettingsStore } from '@/store/settings'
 import { totalInvestments, totalIOwe, totalOwedToMe } from '@/utils/selectors'
 import { fmt } from '@/utils/currency'
 import { daysUntil } from '@/utils/date'
+import { useAuthStore } from '@/store/auth'
 
 const sections = [
   { label:'Инвестиции', to:'/investments', icon:'📈', desc:'Крипто, стейкинг, вклады' },
@@ -22,6 +20,7 @@ export default function MorePage() {
   const { debts } = useDebtStore()
   const { subscriptions } = useSubscriptionStore()
   const { settings } = useSettingsStore()
+  const { currentUsername, logout } = useAuthStore()
   const base = settings.baseCurrency
 
   const upcoming = subscriptions
@@ -43,6 +42,20 @@ export default function MorePage() {
             <span style={{ marginLeft:'auto',color:'var(--text-3)',fontSize:18 }}>›</span>
           </button>
         ))}
+
+        {/* User account block */}
+        <div style={{ background:'var(--bg-card)',border:'1px solid var(--border)',borderRadius:'var(--radius)',padding:'14px 18px',display:'flex',alignItems:'center',justifyContent:'space-between',marginTop:8 }}>
+          <div style={{ display:'flex',alignItems:'center',gap:12 }}>
+            <div style={{ width:38,height:38,borderRadius:'50%',background:'var(--accent-dim)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:18 }}>👤</div>
+            <div>
+              <div style={{ fontSize:14,fontWeight:600,color:'var(--text)' }}>{currentUsername}</div>
+              <div style={{ fontSize:12,color:'var(--text-3)',marginTop:1 }}>Аккаунт</div>
+            </div>
+          </div>
+          <button onClick={logout} style={{ padding:'8px 16px',borderRadius:10,border:'1px solid var(--border)',background:'none',color:'var(--red)',fontSize:13,fontWeight:600,cursor:'pointer',fontFamily:'var(--font)' }}>
+            Выйти
+          </button>
+        </div>
 
         {upcoming.length > 0 && (
           <div style={{ background:'var(--bg-card)',border:'1px solid var(--border)',borderRadius:'var(--radius)',overflow:'hidden',marginTop:8 }}>

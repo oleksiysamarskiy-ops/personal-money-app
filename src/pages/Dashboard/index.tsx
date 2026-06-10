@@ -1,12 +1,6 @@
+import { useExpenseStore, useIncomeStore, useSavingsStore, useInvestmentStore, useDebtStore, useSubscriptionStore, useSettingsStore } from '@/store/hooks'
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useIncomeStore } from '@/features/income/store'
-import { useExpenseStore } from '@/features/expenses/store'
-import { useSavingsStore } from '@/features/savings/store'
-import { useInvestmentStore } from '@/features/investments/store'
-import { useDebtStore } from '@/features/debts/store'
-import { useSubscriptionStore } from '@/features/subscriptions/store'
-import { useSettingsStore } from '@/store/settings'
 import { Currency, CryptoInvestment } from '@/types'
 import {
   totalIncome, monthlyIncome, totalExpenses, monthlyExpenses,

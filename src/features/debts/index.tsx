@@ -1,12 +1,11 @@
+import { useExpenseStore, useIncomeStore, useSavingsStore, useInvestmentStore, useDebtStore, useSubscriptionStore, useSettingsStore } from '@/store/hooks'
 import React, { useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { v4 as uuid } from 'uuid'
-import { useDebtStore } from './store'
 import { Debt, DebtPayment, Currency } from '@/types'
-import { BottomSheet, Btn, Field, fieldBase, Row, CatIcon, Empty, FAB, Card, SectionHead, Page, StatCard, SegmentControl } from '@/components/ui'
-import { useSettingsStore } from '@/store/settings'
+import { BottomSheet, Btn, Field, fieldBase, Empty, FAB, Card, Page, StatCard, SegmentControl, CatIcon } from '@/components/ui'
 import { totalIOwe, totalOwedToMe, debtRemaining } from '@/utils/selectors'
 import { fmt } from '@/utils/currency'
 import { format } from 'date-fns'
@@ -32,19 +31,53 @@ type PaymentForm = z.infer<typeof paymentSchema>
 
 function DebtFormComp({ initial, defaultDir, onClose }: { initial?: Debt; defaultDir: 'i_owe'|'owed_to_me'; onClose:()=>void }) {
   const { add, update } = useDebtStore()
-  const { register, handleSubmit, formState:{errors} } = useForm<DebtForm>({
+  const { register, handleSubmit, watch, setValue, formState:{errors} } = useForm<DebtForm>({
     resolver: zodResolver(debtSchema),
     defaultValues: initial
       ? { direction:initial.direction, name:initial.name, amount:initial.amount, currency:initial.currency, note:initial.note, dueDate:initial.dueDate }
       : { direction:defaultDir, currency:'USD' },
   })
+  const direction = watch('direction')
+
   const submit = (data: DebtForm) => {
     if (initial) update({ ...initial, ...data })
     else add({ id:uuid(), createdAt:new Date().toISOString(), payments:[], direction:data.direction, name:data.name, amount:data.amount, currency:data.currency, note:data.note, dueDate:data.dueDate })
     onClose()
   }
+
   return (
     <form onSubmit={handleSubmit(submit)} style={{ display:'flex',flexDirection:'column',gap:14 }}>
+      {/* Direction selector — shown always, especially important for new debts */}
+      <Field label="Тип долга">
+        <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:8 }}>
+          {(['i_owe','owed_to_me'] as const).map(dir => (
+            <button
+              key={dir}
+              type="button"
+              onClick={() => setValue('direction', dir)}
+              style={{
+                padding:'11px 8px',borderRadius:12,border:'none',cursor:'pointer',
+                fontFamily:'var(--font)',fontSize:13,fontWeight:600,
+                display:'flex',flexDirection:'column',alignItems:'center',gap:4,
+                background: direction===dir
+                  ? (dir==='i_owe' ? 'rgba(242,85,90,0.18)' : 'rgba(61,214,140,0.18)')
+                  : 'var(--bg-input)',
+                color: direction===dir
+                  ? (dir==='i_owe' ? 'var(--red)' : 'var(--green)')
+                  : 'var(--text-3)',
+                outline: direction===dir
+                  ? `1.5px solid ${dir==='i_owe' ? 'var(--red)' : 'var(--green)'}`
+                  : '1.5px solid transparent',
+                transition:'all 0.15s',
+              }}
+            >
+              <span style={{ fontSize:20 }}>{dir==='i_owe' ? '😬' : '🤜'}</span>
+              <span>{dir==='i_owe' ? 'Я должен' : 'Мне должны'}</span>
+            </button>
+          ))}
+        </div>
+      </Field>
+
       <Field label="Имя / название" error={errors.name?.message}>
         <input style={fieldBase} placeholder="Иван, банк…" {...register('name')} />
       </Field>
@@ -107,8 +140,8 @@ function DebtCard({ debt, base, onEdit, onDelete, onPay }: { debt:Debt; base:Cur
           <div style={{ flex:1,minWidth:0 }}>
             <div style={{ fontSize:14,fontWeight:600,marginBottom:2 }}>{debt.name}</div>
             <div style={{ fontSize:12,color:'var(--text-3)' }}>
-              {debt.dueDate && `до ${format(new Date(debt.dueDate),'dd MMM yyyy')} · `}
-              {debt.payments.length} платежей
+              {isIOwe ? 'Я должен' : 'Мне должны'}{debt.dueDate && ` · до ${format(new Date(debt.dueDate),'dd MMM yyyy')}`}
+              {' · '}{debt.payments.length} платежей
             </div>
             <div style={{ marginTop:8,height:4,background:'var(--bg-input)',borderRadius:2,overflow:'hidden' }}>
               <div style={{ height:'100%',width:`${pct}%`,background:isIOwe?'var(--red)':'var(--green)',borderRadius:2 }} />

@@ -1,11 +1,21 @@
 import { create } from 'zustand'
 import { Investment } from '@/types'
 import { loadState, saveState } from '@/store/persist'
+
 const KEY = 'ft-investments'
-interface S { investments: Investment[]; add:(i:Investment)=>void; remove:(id:string)=>void; update:(i:Investment)=>void }
-export const useInvestmentStore = create<S>((set) => ({
-  investments: loadState(KEY, []),
-  add: (i) => set(s => { const investments=[...s.investments,i]; saveState(KEY,investments); return {investments} }),
-  remove: (id) => set(s => { const investments=s.investments.filter(i=>i.id!==id); saveState(KEY,investments); return {investments} }),
-  update: (i) => set(s => { const investments=s.investments.map(x=>x.id===i.id?i:x); saveState(KEY,investments); return {investments} }),
-}))
+type S = { investments: Investment[]; add:(e:Investment)=>void; remove:(id:string)=>void; update:(e:Investment)=>void }
+const stores = new Map<string, ReturnType<typeof create<S>>>()
+
+export function getInvestmentStore(userId: string) {
+  if (!stores.has(userId)) {
+    stores.set(userId, create<S>((set) => ({
+      investments: loadState(KEY, [], userId),
+      add: (e) => set(s => { const investments=[...s.investments,e]; saveState(KEY,investments,userId); return {investments} }),
+      remove: (id) => set(s => { const investments=s.investments.filter(e=>e.id!==id); saveState(KEY,investments,userId); return {investments} }),
+      update: (e) => set(s => { const investments=s.investments.map(x=>x.id===e.id?e:x); saveState(KEY,investments,userId); return {investments} }),
+    })))
+  }
+  return stores.get(userId)!
+}
+
+export const useInvestmentStore = (userId: string) => getInvestmentStore(userId)()
