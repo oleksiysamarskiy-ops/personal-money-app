@@ -74,7 +74,7 @@ export function Page({ children, title, action }: { children:React.ReactNode; ti
       flex: 1,
       overflowY: 'auto',
       /* push content above nav bar + 16px gap + iOS home indicator */
-      paddingBottom: 'calc(var(--nav-h) + 16px + env(safe-area-inset-bottom, 0px))',
+      paddingBottom: 'calc(var(--nav-h) + env(safe-area-inset-bottom, 0px))',
       minHeight: '100%',
     }}>
       {title && (
@@ -113,7 +113,7 @@ export function FAB({ onClick }: { onClick:()=>void }) {
       style={{
         position: 'fixed',
         /* sits 16px above the nav bar, which itself already has its own bottom padding */
-        bottom: 'calc(var(--nav-h) + 16px + env(safe-area-inset-bottom, 0px))',
+        bottom: 'calc(var(--nav-h) + 8px + env(safe-area-inset-bottom, 0px))',
         right: 20,
         width: 52,
         height: 52,

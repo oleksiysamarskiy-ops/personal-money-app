@@ -21,7 +21,7 @@ export default function Layout() {
         width: '100%',
         maxWidth: 430,
         /* nav bar height + 16px visual gap + iOS home indicator */
-        paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))',
+        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
         background: 'rgba(10,10,15,0.97)',
         backdropFilter: 'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
