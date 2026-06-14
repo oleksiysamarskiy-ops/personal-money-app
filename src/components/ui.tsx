@@ -44,7 +44,7 @@ export function Btn({ variant='primary', size='md', style, children, ...props }:
 
 export function Page({ children, title, action }: { children:React.ReactNode; title?:string; action?:React.ReactNode }) {
   return (
-    <div style={{ flex:1,overflowY:'auto',paddingBottom:'calc(var(--nav-h) + var(--safe-bottom) + 16px)' }}>
+    <div style={{ flex:1,overflowY:'auto',paddingBottom:'calc(var(--nav-h) + 16px)' }}>
       {title && (
         <div style={{ padding:'56px 20px 4px',display:'flex',alignItems:'flex-end',justifyContent:'space-between' }}>
           <h1 style={{ fontSize:28,fontWeight:800,letterSpacing:'-0.03em' }}>{title}</h1>

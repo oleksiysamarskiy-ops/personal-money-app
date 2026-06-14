@@ -10,7 +10,7 @@
   --purple:#A855F7; --purple-dim:rgba(168,85,247,0.12);
   --text:#E8E8F0; --text-2:#A0A0B8; --text-3:#606078; --text-num:#F0F0FF;
   --radius-sm:10px; --radius:16px; --radius-lg:22px;
-  --nav-h:64px; --safe-bottom:env(safe-area-inset-bottom,0px);
+  --nav-h:58px; --safe-bottom:env(safe-area-inset-bottom,0px);
   --font:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
   --mono:'SF Mono','JetBrains Mono','Fira Mono',monospace;
 }

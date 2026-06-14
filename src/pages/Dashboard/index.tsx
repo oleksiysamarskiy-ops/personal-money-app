@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useIncomeStore } from '@/features/income/store'
 import { useExpenseStore } from '@/features/expenses/store'
@@ -13,7 +13,8 @@ import {
   totalSavings, monthlySavings, totalInvestments,
   totalIOwe, totalOwedToMe, calcFreeCash, calcNetWorth, financialCushion
 } from '@/utils/selectors'
-import { fmt, CURRENCY_SYMBOLS } from '@/utils/currency'
+import { fmt, CURRENCY_SYMBOLS, updateRates } from '@/utils/currency'
+import { fetchExchangeRates } from '@/utils/exchangeRates'
 import { daysUntil } from '@/utils/date'
 import { Page, Card, SectionHead } from '@/components/ui'
 import { format } from 'date-fns'
@@ -56,6 +57,22 @@ export default function DashboardPage() {
   const navigate = useNavigate()
   const [prices, setPrices] = useState<Record<string,number>>({})
   const [showCurrPicker, setShowCurrPicker] = useState(false)
+  const [liveRates, setLiveRates] = useState<Record<string,number> | null>(null)
+  const [ratesUpdated, setRatesUpdated] = useState<Date | null>(null)
+  const [ratesLoading, setRatesLoading] = useState(false)
+
+  const refreshRates = useCallback(async () => {
+    setRatesLoading(true)
+    const rates = await fetchExchangeRates()
+    updateRates(rates)
+    setLiveRates(rates)
+    setRatesUpdated(new Date())
+    setRatesLoading(false)
+  }, [])
+
+  useEffect(() => {
+    refreshRates()
+  }, [refreshRates])
 
   useEffect(() => {
     const cryptos = investments.filter(i=>i.type==='crypto') as CryptoInvestment[]
@@ -196,6 +213,51 @@ export default function DashboardPage() {
           </Card>
         </div>
       )}
+
+      {/* Live Exchange Rates */}
+      <div style={{ padding:'0 20px 12px' }}>
+        <Card style={{ padding:'14px 16px' }}>
+          <div style={{ display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10 }}>
+            <div style={{ display:'flex',alignItems:'center',gap:6 }}>
+              <SectionHead title="Курсы валют" />
+              {liveRates && (
+                <div style={{ display:'flex',alignItems:'center',gap:4,marginBottom:10 }}>
+                  <div style={{ width:6,height:6,borderRadius:'50%',background:'var(--green)',boxShadow:'0 0 6px var(--green)' }} />
+                  <span style={{ fontSize:9,color:'var(--green)',fontWeight:700,letterSpacing:'0.05em',textTransform:'uppercase' }}>Live</span>
+                </div>
+              )}
+            </div>
+            <button
+              onClick={refreshRates}
+              disabled={ratesLoading}
+              style={{ background:'none',border:'none',color:'var(--text-3)',cursor:'pointer',fontSize:16,padding:'2px 4px',opacity:ratesLoading?0.4:1,transition:'opacity 0.2s' }}
+              title="Обновить курсы"
+            >
+              {ratesLoading ? '⟳' : '↻'}
+            </button>
+          </div>
+          <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:6 }}>
+            {(['EUR','GBP','PLN','UAH'] as const).map(currency => {
+              const rate = liveRates ? liveRates[currency] : null
+              return (
+                <div key={currency} style={{ background:'var(--bg-input)',borderRadius:10,padding:'10px 12px',display:'flex',justifyContent:'space-between',alignItems:'center' }}>
+                  <span style={{ fontSize:12,color:'var(--text-2)',fontWeight:600 }}>
+                    {CURRENCY_SYMBOLS[currency]} {currency}
+                  </span>
+                  <span style={{ fontSize:13,fontWeight:700,fontFamily:'var(--mono)',color:'var(--text-num)',letterSpacing:'-0.02em' }}>
+                    {rate ? rate.toFixed(currency==='UAH'?1:4) : '…'}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+          {ratesUpdated && (
+            <div style={{ fontSize:10,color:'var(--text-3)',marginTop:8,textAlign:'right' }}>
+              Обновлено: {ratesUpdated.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})}
+            </div>
+          )}
+        </Card>
+      </div>
 
       {/* Upcoming subscriptions */}
       {upcoming.length>0 && (

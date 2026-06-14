@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Layout from './components/Layout'
 import DashboardPage from './pages/Dashboard'
@@ -10,8 +10,15 @@ import DebtsPage from './features/debts'
 import SubscriptionsPage from './features/subscriptions'
 import AnalyticsPage from './pages/Analytics'
 import MorePage from './pages/More'
+import { fetchExchangeRates } from './utils/exchangeRates'
+import { updateRates } from './utils/currency'
 
 export default function App() {
+  useEffect(() => {
+    // Fetch live exchange rates on app start
+    fetchExchangeRates().then(updateRates)
+  }, [])
+
   return (
     <BrowserRouter>
       <Routes>
