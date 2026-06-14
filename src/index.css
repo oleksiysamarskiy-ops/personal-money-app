@@ -10,14 +10,55 @@
   --purple:#A855F7; --purple-dim:rgba(168,85,247,0.12);
   --text:#E8E8F0; --text-2:#A0A0B8; --text-3:#606078; --text-num:#F0F0FF;
   --radius-sm:10px; --radius:16px; --radius-lg:22px;
-  --nav-h:58px; --safe-bottom:env(safe-area-inset-bottom,0px);
+  --nav-h:58px;
+  --safe-b:env(safe-area-inset-bottom, 0px);
   --font:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
   --mono:'SF Mono','JetBrains Mono','Fira Mono',monospace;
 }
-html { height:100%; overflow:hidden; }
-body { font-family:var(--font); background:var(--bg); color:var(--text); font-size:15px; line-height:1.5; height:100%; overflow:hidden; -webkit-font-smoothing:antialiased; overscroll-behavior:none; }
-#root { height:100%; display:flex; flex-direction:column; max-width:430px; margin:0 auto; position:relative; }
-input,select,textarea,button { font-family:var(--font); }
-input[type="number"]::-webkit-inner-spin-button,input[type="number"]::-webkit-outer-spin-button { -webkit-appearance:none; }
-::-webkit-scrollbar { display:none; }
-* { scrollbar-width:none; }
+html { height: 100%; overflow: hidden; }
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.5;
+  height: 100%;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
+#root {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  max-width: 430px;
+  margin: 0 auto;
+  position: relative;
+}
+input, select, textarea, button { font-family: var(--font); }
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+::-webkit-scrollbar { display: none; }
+* { scrollbar-width: none; }
+
+/* Date input fix for iOS — force same height as text inputs */
+input[type="date"] {
+  -webkit-appearance: none;
+  appearance: none;
+  min-height: 50px;
+  height: 50px;
+  line-height: 50px;
+  display: flex;
+  align-items: center;
+}
+input[type="date"]::-webkit-date-and-time-value {
+  text-align: left;
+  min-height: 50px;
+}
+
+/* Textarea needs vertical padding since fieldBase uses padding:0 for height consistency */
+textarea {
+  padding: 13px 14px !important;
+  height: auto !important;
+  min-height: 64px;
+}
