@@ -71,10 +71,12 @@ export function Btn({ variant='primary', size='md', style, children, ...props }:
 export function Page({ children, title, action }: { children:React.ReactNode; title?:string; action?:React.ReactNode }) {
   return (
     <div style={{
-            overflowY: 'auto',
+      flex: 1,
+      overflowY: 'auto',
       /* push content above nav bar + 16px gap + iOS home indicator */
-      paddingBottom: 'calc(var(--nav-h) + env(safe-area-inset-bottom, 0px))',
-          }}>
+      paddingBottom: 'calc(var(--nav-h) + 16px + env(safe-area-inset-bottom, 0px))',
+      minHeight: '100%',
+    }}>
       {title && (
         <div style={{ padding:'56px 20px 4px', display:'flex', alignItems:'flex-end', justifyContent:'space-between' }}>
           <h1 style={{ fontSize:28, fontWeight:800, letterSpacing:'-0.03em' }}>{title}</h1>
@@ -111,7 +113,7 @@ export function FAB({ onClick }: { onClick:()=>void }) {
       style={{
         position: 'fixed',
         /* sits 16px above the nav bar, which itself already has its own bottom padding */
-        bottom: 'calc(var(--nav-h) + 8px + env(safe-area-inset-bottom, 0px))',
+        bottom: 'calc(var(--nav-h) + 16px + env(safe-area-inset-bottom, 0px))',
         right: 20,
         width: 52,
         height: 52,
