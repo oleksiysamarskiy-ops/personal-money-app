@@ -80,7 +80,7 @@ export default function IncomePage() {
       </div>
       <FAB onClick={()=>{setEditing(null);setSheet(true)}} />
       <BottomSheet open={sheet} onClose={()=>{setSheet(false);setEditing(null)}} title={editing?'Изменить доход':'Новый доход'}>
-        <IncomeForm initial={editing||undefined} onClose={()=>{setSheet(false);setEditing(null)}} />
+        <IncomeForm key={editing?.id || "new"} initial={editing||undefined} onClose={()=>{setSheet(false);setEditing(null)}} />
       </BottomSheet>
     </Page>
   )

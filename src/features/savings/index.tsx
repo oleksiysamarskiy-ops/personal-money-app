@@ -126,7 +126,7 @@ export default function SavingsPage() {
       </div>
       <FAB onClick={()=>{setEditing(null);setSheet(true)}} />
       <BottomSheet open={sheet} onClose={()=>{setSheet(false);setEditing(null)}} title={editing?'Изменить':'Отложить деньги'}>
-        <SavingsForm initial={editing||undefined} onClose={()=>{setSheet(false);setEditing(null)}} />
+        <SavingsForm key={editing?.id || "new"} initial={editing||undefined} onClose={()=>{setSheet(false);setEditing(null)}} />
       </BottomSheet>
     </Page>
   )

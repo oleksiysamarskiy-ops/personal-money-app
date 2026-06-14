@@ -80,7 +80,7 @@ function SubForm({ initial, onClose }: { initial?: Subscription; onClose:()=>voi
 }
 
 export default function SubscriptionsPage() {
-  const { subscriptions, remove } = useSubscriptionStore()
+  const { subscriptions, remove, markPaid } = useSubscriptionStore()
   const { settings } = useSettingsStore()
   const base = settings.baseCurrency
   const [sheet, setSheet] = useState(false)
@@ -129,6 +129,7 @@ export default function SubscriptionsPage() {
                         <div style={{ fontSize:13,fontWeight:700,color:urgent?'var(--red)':soon?'var(--yellow)':'var(--text-2)' }}>
                           {s.days===0?'Сегодня':s.days<0?'Просрочен':`${s.days} дн.`}
                         </div>
+                      <button onClick={(e)=>{e.stopPropagation();markPaid(s.id)}} style={{marginTop:6}}>✓ Оплачено</button>
                       </div>
                     }
                     onEdit={()=>{setEditing(s);setSheet(true)}}
@@ -143,7 +144,7 @@ export default function SubscriptionsPage() {
 
       <FAB onClick={()=>{setEditing(null);setSheet(true)}} />
       <BottomSheet open={sheet} onClose={()=>{setSheet(false);setEditing(null)}} title={editing?'Изменить подписку':'Новая подписка'}>
-        <SubForm initial={editing||undefined} onClose={()=>{setSheet(false);setEditing(null)}} />
+        <SubForm key={editing?.id || 'new'} initial={editing||undefined} onClose={()=>{setSheet(false);setEditing(null)}} />
       </BottomSheet>
     </Page>
   )

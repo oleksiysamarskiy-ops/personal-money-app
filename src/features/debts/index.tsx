@@ -220,7 +220,7 @@ export default function DebtsPage() {
       <FAB onClick={()=>{setEditing(null);setSheet('debt')}} />
 
       <BottomSheet open={sheet==='debt'} onClose={()=>{setSheet(null);setEditing(null)}} title={editing?'Изменить долг':'Новый долг'}>
-        <DebtFormComp initial={editing||undefined} defaultDir={tab} onClose={()=>{setSheet(null);setEditing(null)}} />
+        <DebtFormComp key={editing?.id || "new"} initial={editing||undefined} defaultDir={tab} onClose={()=>{setSheet(null);setEditing(null)}} />
       </BottomSheet>
 
       <BottomSheet open={sheet==='payment'} onClose={()=>{setSheet(null);setPayingDebt(null)}} title={`Платёж: ${payingDebt?.name||''}`}>
