@@ -11,10 +11,13 @@ const tabs = [
 
 export default function Layout() {
   return (
-    <div style={{ display:'flex', flexDirection:'column', minHeight:'100vh' }}>
-      <main style={{ flex: 1 }}><Outlet /></main>
+    <div style={{ display:'flex', flexDirection:'column', height:'100%' }}>
+      <Outlet />
       <nav style={{
-        position: 'sticky',
+        position: 'fixed',
+        bottom: 0,
+        left: '50%',
+        transform: 'translateX(-50%)',
         width: '100%',
         maxWidth: 430,
         /* nav bar height + 16px visual gap + iOS home indicator */
