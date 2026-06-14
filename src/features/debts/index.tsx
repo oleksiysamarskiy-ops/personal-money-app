@@ -32,19 +32,43 @@ type PaymentForm = z.infer<typeof paymentSchema>
 
 function DebtFormComp({ initial, defaultDir, onClose }: { initial?: Debt; defaultDir: 'i_owe'|'owed_to_me'; onClose:()=>void }) {
   const { add, update } = useDebtStore()
-  const { register, handleSubmit, formState:{errors} } = useForm<DebtForm>({
+  const { register, handleSubmit, setValue, watch, formState:{errors} } = useForm<DebtForm>({
     resolver: zodResolver(debtSchema),
     defaultValues: initial
       ? { direction:initial.direction, name:initial.name, amount:initial.amount, currency:initial.currency, note:initial.note, dueDate:initial.dueDate }
       : { direction:defaultDir, currency:'USD' },
   })
+  const direction = watch('direction')
   const submit = (data: DebtForm) => {
     if (initial) update({ ...initial, ...data })
     else add({ id:uuid(), createdAt:new Date().toISOString(), payments:[], direction:data.direction, name:data.name, amount:data.amount, currency:data.currency, note:data.note, dueDate:data.dueDate })
     onClose()
   }
+  const DIR_OPTS = [
+    { val: 'i_owe' as const,      icon: '😬', label: 'Я должен',   clr: 'var(--red)',   bg: 'var(--red-dim)' },
+    { val: 'owed_to_me' as const, icon: '🤜', label: 'Мне должны', clr: 'var(--green)', bg: 'var(--green-dim)' },
+  ]
   return (
     <form onSubmit={handleSubmit(submit)} style={{ display:'flex',flexDirection:'column',gap:14 }}>
+      <div style={{ display:'grid',gridTemplateColumns:'1fr 1fr',gap:8 }}>
+        {DIR_OPTS.map(({ val, icon, label, clr, bg }) => (
+          <button
+            key={val}
+            type="button"
+            onClick={() => setValue('direction', val, { shouldValidate:true })}
+            style={{
+              display:'flex',flexDirection:'column',alignItems:'center',gap:6,
+              padding:'14px 8px',borderRadius:12,cursor:'pointer',
+              border:`2px solid ${direction===val ? clr : 'var(--border)'}`,
+              background: direction===val ? bg : 'transparent',
+              transition:'all 0.15s',
+            }}
+          >
+            <span style={{ fontSize:24 }}>{icon}</span>
+            <span style={{ fontSize:12,fontWeight:700,color: direction===val ? clr : 'var(--text-3)' }}>{label}</span>
+          </button>
+        ))}
+      </div>
       <Field label="Имя / название" error={errors.name?.message}>
         <input style={fieldBase} placeholder="Иван, банк…" {...register('name')} />
       </Field>
